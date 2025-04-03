@@ -1,0 +1,39 @@
+networks:
+  network_poc_llm:
+    external: true  # ใช้ network ที่สร้างไว้ก่อนหน้า
+
+services:
+  app:
+    build: .  # Build from local Dockerfile
+    container_name: app_container
+    networks:
+      - network_poc_llm
+    ports:
+      - "8000:8000"
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_server
+    networks:
+      - network_poc_llm
+    restart: always
+    ports:
+      - "11434:11434"  # Ollama runs on port 11434
+    volumes:
+      - ollama_data:/root/.ollama  # Persist models
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_reverse_proxy
+    networks:
+      - network_poc_llm
+    depends_on:
+      - app
+      - ollama
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+volumes:
+  ollama_data:  # Persistent storage for Ollama models
